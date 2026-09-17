@@ -1,0 +1,138 @@
+# 本文件部署到宿主仓库的 **仓库根** `.github/workflows/build-adjust-demo.yml`。
+# GitHub Actions 只读取仓库根的 .github/workflows/，不会读取子目录里的同名文件。
+# 因此路径一律带 `adjust_demo/` 前缀，并用 defaults.run.working-directory 切换工作目录。
+# 若本 Demo 被拆成独立仓库，需把前缀去掉。
+
+name: build-adjust-demo-ipa
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'adjust_demo/Sources/**'
+      - 'adjust_demo/Resources/**'
+      - 'adjust_demo/Config/**'
+      - 'adjust_demo/project.yml'
+      - '.github/workflows/build-adjust-demo.yml'
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: adjust_demo
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject app token
+        run: |
+          set -euo pipefail
+          TOKEN="${{ secrets.ADJUST_APP_TOKEN }}"
+          if [ -z "${TOKEN}" ]; then
+            echo "未配置 ADJUST_APP_TOKEN secret，保留配置中的占位值"
+          else
+            jq --arg t "${TOKEN}" '.appToken = $t' Config/demo-config.json > /tmp/cfg.json
+            mv /tmp/cfg.json Config/demo-config.json
+            echo "已注入 app_token，长度 ${#TOKEN}"
+          fi
+
+      - name: Read demo config
+        id: cfg
+        run: |
+          set -euo pipefail
+          NV=$(jq -r '.nativeVersion' Config/demo-config.json)
+          CS=$(jq -r '.clientSdk' Config/demo-config.json)
+          echo "native_version=$NV" >> "$GITHUB_OUTPUT"
+          echo "目标 nativeVersion=${NV}  clientSdk=${CS}"
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Fetch signature framework
+        run: |
+          set -euo pipefail
+          NV="${{ steps.cfg.outputs.native_version }}"
+          BASE="https://github.com/adjust/adjust_signature_sdk/releases/download/v${NV}"
+          mkdir -p Frameworks
+          FOUND=""
+          for NAME in \
+            "AdjustSigSdk-iOS-tvOS-Dynamic-${NV}.xcframework.zip" \
+            "AdjustSigSdk-iOS-Dynamic-${NV}.xcframework.zip"
+          do
+            echo "尝试 ${NAME}"
+            if curl -fsSL -o /tmp/sigfw.zip "${BASE}/${NAME}"; then
+              FOUND="${NAME}"
+              break
+            fi
+          done
+          if [ -z "${FOUND}" ]; then
+            echo "未找到 ${NV} 的 iOS Dynamic xcframework"
+            exit 1
+          fi
+          echo "下载成功 ${FOUND}"
+          unzip -q /tmp/sigfw.zip -d Frameworks
+          test -d Frameworks/AdjustSigSdk.xcframework
+          ls -la Frameworks
+          shasum -a 256 /tmp/sigfw.zip
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build unsigned .app
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project AdjustDemo.xcodeproj \
+            -scheme AdjustDemo \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            build -quiet
+
+      - name: Package into .ipa
+        run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release-iphoneos/AdjustDemo.app"
+          test -d "$APP"
+          mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          cd out
+          zip -qry AdjustDemo.ipa Payload
+
+      - name: Verify package
+        run: |
+          set -euo pipefail
+          echo "--- ipa ---"
+          ls -lh out/AdjustDemo.ipa
+          unzip -l out/AdjustDemo.ipa
+          echo "--- main binary arch ---"
+          lipo -info out/Payload/AdjustDemo.app/AdjustDemo
+          echo "--- embedded framework ---"
+          ls -la out/Payload/AdjustDemo.app/Frameworks/AdjustSigSdk.framework
+          echo "--- framework version strings ---"
+          strings out/Payload/AdjustDemo.app/Frameworks/AdjustSigSdk.framework/AdjustSigSdk \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -5 || true
+          echo "--- bundled config（app_token 打码）---"
+          jq '.appToken = "***"' out/Payload/AdjustDemo.app/demo-config.json
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AdjustDemo-ipa
+          path: adjust_demo/out/AdjustDemo.ipa
+          if-no-files-found: error
+

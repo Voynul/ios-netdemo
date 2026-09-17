@@ -1,0 +1,10 @@
+build/
+out/
+dist/
+Frameworks/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcodeproj/
+.DS_Store
+

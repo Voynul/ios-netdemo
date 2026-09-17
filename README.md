@@ -4,6 +4,15 @@
 
 本仓库验证了一条路径：工作机完全不需要 macOS，也能做出可安装、可运行、能收发网络数据的 iOS 应用。全部数据来自真实执行，不是理论流程。
 
+本仓库包含两个独立的 iOS 工程：
+
+| 目录 | 工程 | 说明 |
+| --- | --- | --- |
+| 仓库根 | NetDemo | 本文档介绍的对象。SwiftUI 网络测试应用 + Windows 交付参考实现 |
+| [`adjust_demo/`](adjust_demo/) | AdjustDemo | 链接 Adjust 官方 `AdjustSigSdk` 签名库的发包演示，用于产出真实 Adjust HTTP 样本。见其 [README](adjust_demo/README.md) |
+
+两者的构建工作流各自独立，带路径过滤，互不触发。
+
 ---
 
 ## 这个项目做什么

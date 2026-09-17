@@ -1,0 +1,12 @@
+{
+  "nativeVersion": "3.20.1",
+  "clientSdk": "ios5.0.1",
+  "appToken": "REPLACE_WITH_ADJUST_APP_TOKEN",
+  "environment": "sandbox",
+  "host": "app.adjust.com",
+  "scheme": "https",
+  "appName": "AdjustDemo",
+  "bundleId": "com.example.adjustsigndemo",
+  "autoSend": true,
+  "intervalSeconds": 1.5
+}
