@@ -1,231 +1,164 @@
-# AdjustDemo 版本记录（iOS）
+# Adjust Signature iOS nativeVersion 版本台账
 
-本文件记录 `E:\work\IOS_adjust\adjust_demo` 工程跑过的 Signature Library 版本，
-以及每次实际构建、安装、发包的实测信息。每次切换版本或完成一轮验证后追加一条。
+本文件用于维护 iOS `AdjustSignature` 的版本处理进度、后续排期，以及
+`nativeVersion` 与 Adjust iOS SDK 版本之间的官方依赖关系。
 
-本 Demo 的用途是**产出真实 iOS Adjust HTTP 样本**，供
-`../adjust_test/adjust-signature` 对拍。它不替代算法复现工程。
+最后核对日期：2026-09-17。
 
-## 本文档与 Android 版的关系
+## 1. 维护口径
 
-本文件由 `E:\work\adjust_new\adjust_demo\VERSION_LOG.md`（Android）的**骨架**改写而来。
-两侧是独立文档，互不同步。
+| 名称 | 含义 |
+| --- | --- |
+| `nativeVersion` | `AdjustSignature` / `AdjustSigSdk` 的版本号，最终写入 Authorization 的 `native_version` |
+| `clientSdk` | 请求头和签名入参中的 Adjust iOS SDK 版本串，例如 `ios5.0.1` |
+| 已完成 | 已取得真实 iOS 样本，算法复现、对拍、发包验证和归档均已完成 |
+| 进行中 | 已进入 Demo 构建或真机取样阶段，尚未满足已完成条件 |
+| 待处理 | 已进入处理范围，但尚未开始 |
+| 暂缓 | 官方版本存在，当前排期不处理 |
 
-**Android 的数值不是 iOS 真值。** 官方 iOS 与 Android 的同号签名库在依赖声明上
-并不一致，实测至少有 5 处冲突（见「iOS 官方 SDK 与 Signature 库配对」）。因此：
+Demo 构建成功、IPA 安装成功和三连请求抓包是独立检查项。只有完成归档后，
+该 `nativeVersion` 才计入已完成。
 
-- 本文件只登记 **iOS 侧实测**结果；
-- Android 文档里的 `adj_signing_id` / `headers_id` 等只能作排期候选，
-  必须由本 Demo 抓到的真实 iOS Authorization 覆盖；
-- 不得把 Android 的字段表、证书槽、白名单、XOR、常量抄进 iOS 算法或本记录。
+归档状态仍需同步到工作区根目录 `签名版本处理清单.md`。该清单只在收到明确归档命令后修改。
 
-依据：本工作区根 `AGENTS.md` §3.1 与 `../签名版本处理清单.md` 的「`adj` 对应口径」。
+## 2. 总体进度
 
-## 当前工程版本
+官方 `adjust/adjust_signature_sdk` 当前公开 31 个 Release，包含正式版和带 beta 后缀的版本。
 
-| 项目 | 值 | 说明 |
+| 状态 | 数量 | 说明 |
+| --- | ---: | --- |
+| 已完成 | 6 | 已有真实 iOS 样本并完成归档 |
+| 进行中 | 1 | `3.20.1` |
+| 待处理 | 13 | 进入后续排期 |
+| 暂缓 | 11 | `3.0.0` 至 `3.13.1` |
+| 合计 | 31 | 与官方 Release 数量一致 |
+
+## 3. 当前 Demo 配置
+
+| 项目 | 当前值 | 状态 |
 | --- | --- | --- |
-| nativeVersion | `3.20.1` | `Config/demo-config.json` |
-| clientSdk | `ios5.0.1` | 候选值，待抓包核对（依据见下文配对表） |
-| app_token | 占位值 + Secret 注入 | 仓库存 `REPLACE_WITH_ADJUST_APP_TOKEN`；真实值在 Secret `ADJUST_APP_TOKEN`，构建时注入 |
-| environment | `sandbox` | |
-| host | `app.adjust.com` | |
-| 签名库 | `AdjustSigSdk.xcframework` | CI 按 nativeVersion 从官方 releases 下载 |
-| 工程生成 | XcodeGen | `project.yml` |
-| 构建 | GitHub Actions `macos-15` | 本机 Windows 不编译 |
-| 安装 | Sideloadly 重签 | 产物为未签名 IPA |
-| 宿主仓库 | `Voynul/ios-netdemo` | 本 Demo 位于其 `adjust_demo/` 子目录 |
+| nativeVersion | `3.20.1` | 进行中 |
+| clientSdk | `ios5.0.1` | 与 iOS SDK 5.0.1 的 `~> 3.18` 依赖范围相容 |
+| app_token | `aa0f4lr105j4` | 可公开的测试值 |
+| environment | `sandbox` | 已配置 |
+| host | `app.adjust.com` | 已配置 |
+| GitHub Actions run | `35192529174` | 构建成功 |
+| 提交 | `66facd6` | 已推送到 `Voynul/ios-netdemo` 的 `main` 分支 |
+| IPA SHA-256 | `EE63E8E822B0207BD0DD538CF7F6CAEA7BA78FD9052A32EC5F61AE2EB13A5ABF` | 已核对 |
+| 真机双次运行 | 待执行 | 需卸载重装后分别运行一次 |
+| 三连请求样本 | 待执行 | `/session`、`/sdk_click`、`/attribution` |
 
-版本号统一配置在 `Config/demo-config.json`，CI 与 App 读同一份文件。
+## 4. Adjust iOS SDK 与 nativeVersion 的官方关系
 
-## 版本创建状态与排期
+### 4.1 iOS SDK 5.x 的固定依赖
 
-**本 Demo 的「已跑通」与根目录 `../签名版本处理清单.md` 的「已处理」是两个口径，
-不要互相套用：**
+以下关系来自 `adjust/ios_sdk` 各 tag 的 `Adjust.podspec`，并由官方 `CHANGELOG.md`
+中的 Signature library 更新记录交叉核对。
 
-| 口径 | 含义 | 维护位置 |
+| Adjust iOS SDK | `AdjustSignature` 依赖 | 关系类型 |
 | --- | --- | --- |
-| Demo 已跑通 | 该 nativeVersion 已成功构建、装机、发出三连请求、抓包落样本 | 本文件 |
-| 算法已处理 | 该 nativeVersion 的算法已复现、对拍、发包验证并通过归档 | `../签名版本处理清单.md` |
+| `5.0.0` - `5.0.1` | `~> 3.18` | 范围依赖，实际解析版本受锁文件和解析时间影响 |
+| `5.0.2` - `5.4.0` | `3.35.2` | 固定版本 |
+| `5.4.1` - `5.4.5` | `3.47.0` | 固定版本 |
+| `5.4.6` | `3.61.0` | 固定版本 |
+| `5.5.0` - `5.6.1` | `3.62.0` | 固定版本 |
+| `5.6.2` - `5.7.0` | `3.67.0` | 固定版本 |
+| `5.8.0` | `5.0.0` | 固定版本 |
 
-Demo 跑通是算法处理的前置条件，因此 Demo 进度通常领先。**跑通 Demo 不代表算法完成，
-不得据此改动处理清单**——那只在用户明确归档命令后执行。
+截至 2026-09-17，官方 iOS SDK 最新 tag 为 `5.8.0`，其固定依赖为
+`AdjustSignature 5.0.0`。签名库 `5.5.0` 发布时间晚于 iOS SDK `5.8.0`，
+当前公开的 iOS SDK tag 中尚未出现对 `5.5.0` 的固定依赖。
 
-完整版本排期（31 个版本，含 beta）见 `../签名版本处理清单.md`。
+### 4.2 iOS SDK 4.x 的关系边界
 
-## 已跑通的组合
+- iOS SDK 从 `4.21.0` 开始支持 Signature library 插件。
+- 官方集成文档要求 Adjust iOS SDK `4.35.2` 或更高版本。
+- 官方文档给出的 Signature library 支持范围为 `3.0.0` 至 `3.67.0`。
+- iOS SDK 4.x 的 podspec 没有逐版本固定 `AdjustSignature`，无法据此建立一对一关系。
+- 需要使用 4.x 的旧签名库时，Demo 默认从 `ios4.38.4` 开始验证，并以真实请求结果确认。
 
-| 序号 | nativeVersion | clientSdk | 构建 | 三连请求 | 抓包落样本 | 备注 |
-| --- | --- | --- | --- | --- | --- | --- |
-| — | 3.20.1 | ios5.0.1 | 待执行 | 待执行 | 待执行 | 首次创建，服务于 3.20.1 复现任务的样本闸门 |
+### 4.3 关系使用规则
 
-## 已生成 / 已验证记录
+1. 固定依赖优先使用表中对应的 `clientSdk`。
+2. `~> 3.18` 只证明版本范围相容，不能证明某个 App 当时实际解析到哪个签名库版本。
+3. beta 版本没有官方固定配对时，只能选择同系列稳定版对应的 SDK 作为测试候选。
+4. `clientSdk` 与 `nativeVersion` 分别记录，不把两者合并成单一版本号。
 
-### 记录模板
+## 5. 已完成 nativeVersion
+
+| nativeVersion | 对应 Adjust iOS SDK 关系 | 状态 | 归档记录 |
+| --- | --- | --- | --- |
+| `5.0.0` | iOS SDK `5.8.0` 固定依赖 | 已完成 | iOS 样本已验证 |
+| `3.67.0` | iOS SDK `5.6.2` - `5.7.0` 固定依赖 | 已完成 | `native-3.67.0-20260910-102529` |
+| `3.61.0` | iOS SDK `5.4.6` 固定依赖 | 已完成 | `native-3.61.0-20260911-153154` |
+| `3.47.0` | iOS SDK `5.4.1` - `5.4.5` 固定依赖 | 已完成 | `native-3.47.0-20260910-151515` |
+| `3.35.2` | iOS SDK `5.0.2` - `5.4.0` 固定依赖 | 已完成 | `native-3.35.2-20260910-183416` |
+| `3.20.2` | iOS SDK `5.0.0` - `5.0.1` 的 `~> 3.18` 范围 | 已完成 | `native-3.20.2-20260914-151006` |
+
+## 6. 进行中与待处理排期
+
+执行顺序以当前任务优先，其余版本按现有版本计划从新到旧推进。
+
+| 顺序 | nativeVersion | 类型 | 建议 clientSdk | 关系依据 | 状态 |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | `3.20.1` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 进行中：构建完成，待真机双次运行与抓包 |
+| 2 | `5.5.0` | 正式版 | 待定 | 当前没有 iOS SDK tag 固定依赖该版本 | 待处理 |
+| 3 | `3.67.0-beta` | beta | `ios5.6.2` | 同系列稳定版由 iOS SDK 5.6.2 固定依赖 | 待处理，需单独验证 |
+| 4 | `3.62.0` | 正式版 | `ios5.5.0` | iOS SDK 5.5.0 首次固定依赖 | 待处理 |
+| 5 | `3.47.0-beta` | beta | `ios5.4.1` | 同系列稳定版由 iOS SDK 5.4.1 固定依赖 | 待处理，需单独验证 |
+| 6 | `3.35.1` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 待处理 |
+| 7 | `3.35.0` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 待处理 |
+| 8 | `3.32.0` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 待处理 |
+| 9 | `3.24.1-beta` | beta | `ios5.0.1` | 5.0.1 作为测试候选，需单独验证 | 待处理 |
+| 10 | `3.24.0-beta` | beta | `ios5.0.1` | 5.0.1 作为测试候选，需单独验证 | 待处理 |
+| 11 | `3.20.0` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 待处理 |
+| 12 | `3.18.0` | 正式版 | `ios5.0.1` | `~> 3.18` 范围下限 | 待处理 |
+| 13 | `3.14.1` | 正式版 | `ios4.38.4` | iOS SDK 4.x 插件路径，待真实请求确认 | 待处理 |
+| 14 | `3.14.0` | 正式版 | `ios4.38.4` | iOS SDK 4.x 插件路径，待真实请求确认 | 待处理 |
+
+## 7. 暂缓版本
+
+以下 11 个版本当前不进入处理排期。需要支持时，再恢复到待处理列表并确定对应的
+`clientSdk` 候选。
+
+| nativeVersion | 当前状态 |
+| --- | --- |
+| `3.13.1`、`3.13.0`、`3.12.0`、`3.10.0` | 暂缓 |
+| `3.7.0`、`3.6.0`、`3.5.2`、`3.5.1`、`3.5.0` | 暂缓 |
+| `3.3.0`、`3.0.0` | 暂缓 |
+
+## 8. 单版本验证记录
+
+每个版本完成后追加一节，保留可验证信息，不在本文件记录算法常量或复现细节。
 
 ```text
-### YYYY-MM-DD（nativeVersion X / clientSdk Y）
+### YYYY-MM-DD - nativeVersion X / clientSdk Y
 
-- 配置：nativeVersion、clientSdk、app_token、environment、host。
-- 构建：run id、结果、IPA 大小与 SHA-256、内嵌 framework 版本。
-- 签名库：getVersion() 实际返回值，与配置是否一致。
-- 设备：机型 / iOS 版本 / 越狱状态。
-- 双次运行（按 AGENTS.md 规则顺序）：
-  - 第一次启动：全新安装后启动，记录时间与三连请求结果。
-  - 卸载（iOS 无单独清数据命令）。
-  - 第二次启动：重装后启动，记录时间与结果。
-- Authorization 实测：`native_version` / `algorithm` / `adj_signing_id` /
-  `headers_id` 实际值，与候选值是否一致。
-- 样本：落盘到 `../samples/` 的路径。
-- 遗留：未闭合项。
+- 官方关系：固定依赖、范围依赖或测试候选。
+- 配置：nativeVersion、clientSdk、environment、host。
+- 构建：提交、Actions run id、IPA SHA-256、构建结果。
+- 签名库：getVersion() 返回值。
+- 设备：机型、iOS 版本、签名方式。
+- 第一次运行：/session、/sdk_click、/attribution 的状态与样本路径。
+- 卸载重装。
+- 第二次运行：/session、/sdk_click、/attribution 的状态与样本路径。
+- 结论：通过、阻塞或需要补证。
 ```
 
-## iOS 官方 SDK 与 Signature 库配对
+## 9. 更新流程
 
-### 官方文档给了什么
+1. 从本文件排期表选择目标 `nativeVersion`。
+2. 按第 4 节确定 `clientSdk`；无固定关系时明确标记为测试候选。
+3. 修改 `Config/demo-config.json`，推送后由 GitHub Actions 构建 IPA。
+4. 使用 Sideloadly 重签安装，按 `AGENTS.md` 执行两次安装运行。
+5. 冻结两轮三连请求样本，在本文件追加验证记录。
+6. 完成算法复现、对拍、发包验证和归档后，将该版本移入已完成表并重算数量。
+7. 只有收到明确归档命令后，才同步根目录 `签名版本处理清单.md`。
 
-Adjust 官方**没有发布逐版本的配对表**。公开文档只给下限与范围：
+## 10. 官方来源
 
-| 来源 | 约束 |
-| --- | --- |
-| iOS v4 集成页 | Adjust SDK ≥ `4.35.2`；Signature 版本在 `3.0.0` – `3.67.0` 之间（含） |
-| iOS v5 集成页 | Adjust SDK ≥ `5.0.0`；签名库随 SDK v5 更新自动升级 |
-| Help Center | SDK v5 默认已内置签名库，多数情况无需单独集成 |
-
-### 逐版本配对的两个权威来源
-
-配对关系需从以下两处推导，二者互相印证：
-
-1. `adjust/ios_sdk` 的 `CHANGELOG.md`——升级时会写明
-   `Updated the Adjust Signature library version to X`；
-2. `adjust/ios_sdk` 各 tag 的 `Adjust.podspec` / `Package.swift` 依赖声明。
-
-取值日期 2026-09-17。
-
-| iOS SDK | AdjustSignature | 来源 |
-| --- | --- | --- |
-| 4.21.0 | （开始支持签名库作为插件） | CHANGELOG |
-| 4.35.2 | （官方文档规定的最低 SDK 版本） | docs |
-| 5.0.0 / 5.0.1 | `~> 3.18`（范围，非固定） | podspec |
-| 5.0.2 | `3.35.2`（pinned） | CHANGELOG + podspec |
-| 5.1.0 – 5.4.0 | `3.35.2` | podspec |
-| 5.4.1 – 5.4.5 | `3.47.0` | CHANGELOG + podspec |
-| 5.4.6 | `3.61.0` | CHANGELOG + podspec |
-| 5.5.0 – 5.6.1 | `3.62.0` | CHANGELOG + podspec |
-| 5.6.2 – 5.7.x | `3.67.0` | CHANGELOG + podspec |
-| 5.8.0 | `5.0.0` | CHANGELOG + podspec |
-
-### client_sdk 与 native_version 不是一回事
-
-这两个字段容易混淆，含义不同：
-
-| 字段 | 含义 | 例 |
-| --- | --- | --- |
-| `client_sdk` | Adjust **SDK** 版本串 | `ios5.0.1` |
-| `native_version` | **签名库**版本 | `3.20.1` |
-
-因此配对是**多对多**，不存在一对一映射：
-
-- 一个 SDK 版本可能对应多个签名库版本——5.0.0 / 5.0.1 只声明范围 `~> 3.18`；
-- 一个签名库版本可能被多个 SDK 版本使用——3.62.0 覆盖 5.5.0 至 5.6.1。
-
-签名入口 `+[ADJSigner sign:withActivityKind:withSdkVersion:]` 把 `client_sdk` 当**入参**
-接收，不校验它与自身版本的关系（本工作区 unidbg Probe 实测传入
-`ios4.38.0` 时签名器照常产出签名）。所以本 Demo 的 `clientSdk` 只要是一个合理的
-Adjust iOS SDK 版本串、且与 `Client-SDK` 头保持一致即可。
-
-### 对 3.20.1 的结论
-
-`nativeVersion=3.20.1` 落在 SDK 5.0.0 / 5.0.1 的 `~> 3.18` 范围内，因此
-`clientSdk` 取 `ios5.0.0` 或 `ios5.0.1` 都自洽。本工程取 `ios5.0.1`，
-理由是同代际相邻版本 3.20.2 的实测抓包为 `ios5.0.1`。
-
-### 官方提醒
-
-Help Center 指出：若要把签名库**降级到该 App 从未使用过的版本**，应先联系
-Adjust 代表或 support@adjust.com。本 Demo 属本地测试、不涉及线上 App，不受此限；
-但后续若要在正式 App 上做版本回退，需先走这条流程。
-
-### 与 Android 文档的冲突点
-
-Android 文档声明的配对与 iOS podspec / CHANGELOG 实测不一致的有 5 处：
-
-| iOS SDK | iOS podspec | Android 文档 | 结论 |
-| --- | --- | --- | --- |
-| 5.0.0 | `~> 3.18` | `[3,)` | 冲突 |
-| 5.0.1 | `~> 3.18` | `[3.20.0, 4.0.0)` | 冲突 |
-| 5.0.2 | `3.35.2` | `3.35.0` | 冲突 |
-| 5.4.5 | `3.47.0` | `3.61.0` | 冲突 |
-| 5.6.1 | `3.62.0` | `3.67.0` | 冲突 |
-| 5.4.1 / 5.7.0 / 5.8.0 | 一致 | 一致 | 无冲突 |
-
-### 4.x 区间的说明
-
-iOS SDK 4.x 从 `4.21.0` 起支持签名库作为插件，官方文档规定实际可用的下限是
-`4.35.2`。该区间的 podspec 不含 signature 的 subspec 或 dependency 声明，
-因此**无法从 podspec 推出逐版本配对**，只能确认可用范围。后续若测
-3.14.x – 3.20.0 这批签名库，配对需另找证据（可从 App 实际抓包反推）。
-
-另一个易混点：Android 文档里用的 `4.38.5` 在 iOS 侧**不存在**，
-iOS SDK 4.x 止于 `v4.38.4`。后续测这批签名库时，`clientSdk` 不能照抄
-Android 文档的 `ios4.38.5`。
-
-## 候选 metadata 参考（来源 Android，仅供排期，非 iOS 真值）
-
-下表来自 Android 全量实测。**它的 `adj_signing_id` / `headers_id` 是 Android 数值，
-iOS 同号版本可能不同，必须以本 Demo 抓包覆盖。** 仅用于排期与预期对照。
-
-| native_version | 候选 algorithm | 候选 adj_signing_id | 候选 headers_id | iOS 侧状态 |
-| --- | --- | --- | --- | --- |
-| 3.14.0 / 3.14.1 | adj5 | 1100000 | 5 | 待实测 |
-| 3.18.0 / 3.20.0 / 3.20.1 | adj5 | 1100000 | 5 | 3.20.1 已由本工作区 IDA 确认 algorithm/secret_id/headers_id |
-| 3.20.2 / 3.35.2 | adj5 | 1100000 / 1100001 | 5 | algorithm 已由 iOS 样本确认，其余见归档文档 |
-| 3.32.0 / 3.35.0 / 3.35.1 | adj5 | 1100001 | 5 | 待实测 |
-| 3.47.0 | adj6 | 1200000 | 5 | algorithm 已由 iOS 样本确认 |
-| 3.61.0 | adj7 | 1300000 | 7 | algorithm 已由 iOS 样本确认 |
-| 3.62.0 | adj7 | 1300000 | 8 | 待实测 |
-| 3.67.0 | adj8 | 1400000 | 9 | algorithm 已由 iOS 样本确认 |
-| 5.0.0 | adj9 | 1500000 | 10 | algorithm 已由本工作区冻结 iOS HTTP 确认 |
-| 5.5.0 | adj9（用户确认） | 待实测 | 待实测 | 待实测 |
-| 3.24.0 / 3.24.1 / 3.47.0 / 3.67.0 的 beta | 按同系列归组 | 待实测 | 待实测 | 待实测 |
-
-adj4 系列（3.0.0 起共 11 个）本工作区目前不处理，未列入。
-
-`native_version` 字段恒为该行自身的版本号，用于 Authorization 与签名器写回，
-不随候选值变化。
-
-## 新增一条记录的方法
-
-1. 改 `Config/demo-config.json` 的 `nativeVersion`；按配对表核对 `clientSdk` 是否需要同改。
-2. 推送到 `main` 触发构建，或
-   `gh workflow run build-adjust-demo-ipa --repo Voynul/ios-netdemo`。
-
-```powershell
-gh run list --limit 5
-gh run download <run-id> -n AdjustDemo-ipa -D .\dist
-```
-
-3. 用 Sideloadly 重签 IPA 并装到设备。
-4. 按 AGENTS.md 的双次运行规则跑两轮，用 Reqable 抓三条请求。
-5. 把 Authorization 实测值、请求结果与样本路径追加到本文件「已生成 / 已验证记录」，
-   并把对应行从「已跑通」表的占位行替换为实测行。
-
-## 注意事项
-
-- **服务端返回非 2xx 属预期**。app_token 是占位值时会返回
-  「app token 无效」类错误；出站请求和签名完整，可用于对拍。
-  但复现工程的 **5.2 发包闸门要求 HTTP 2xx**，那道闸门需要真实 token。
-- **签名真值以网络层证据为准**。App 内日志只作辅助；Authorization 的最终真值
-  是 Reqable 冻结的那条请求。
-- **iOS 无法单独清空 App 数据**。Android 的 `pm clear` 在 iOS 没有对应命令；
-  等效做法是卸载重装。注意 iOS Keychain 在卸载后可能保留，本 Demo 的状态
-  （installed_at / session_count）存在 UserDefaults，卸载即清。
-- **免费 Apple ID 签名 7 天过期**，过期后应用打不开，重新用 Sideloadly 签一次即可。
-  iOS 16 及以上需在设备上手动开启开发者模式，并在
-  设置 → 通用 → VPN与设备管理 中信任开发证书。
-- **换 nativeVersion 时一并核对 clientSdk**。两者不匹配会产出与目标版本不符的样本。
-- **本 Demo 自己组字段发包，不经过 Adjust 官方 iOS SDK**，字段集是「够用且可追溯」，
-  不等同于某个真实 App 的完整字段集。样本用于算法对拍，不用于复刻某个 App 的流量。
-- **内嵌 AdjustSigSdk 是 Dynamic framework**，Sideloadly 重签时会一并处理；
-  若换用 Static `.a` 形态，链接方式与 `project.yml` 需要同步调整。
-- 不提交真实 App token、密钥、代理账号或其它敏感配置。
+- Adjust Signature SDK Releases：<https://github.com/adjust/adjust_signature_sdk/releases>
+- Adjust iOS SDK Releases：<https://github.com/adjust/ios_sdk/releases>
+- Adjust iOS SDK CHANGELOG：<https://github.com/adjust/ios_sdk/blob/master/CHANGELOG.md>
+- Adjust iOS SDK tags 中的 `Adjust.podspec`：<https://github.com/adjust/ios_sdk/tags>
+- Adjust iOS Signature library integration：<https://dev.adjust.com/en/sdk/ios/features/signature-library/>
