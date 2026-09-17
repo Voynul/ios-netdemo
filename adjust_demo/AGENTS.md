@@ -1,23 +1,24 @@
 # adjust_demo/ — 自建 iOS 发包 Demo
 
-本目录属于 `E:\work\IOS_adjust` 工作区，用于产出**真实 iOS Adjust HTTP 样本**。
-进入或修改前先读仓库根 `AGENTS.md`。
+本目录的固定路径是 `E:\work\IOS_adjust\ios-netdemo\adjust_demo`，用于产出**真实 iOS Adjust HTTP 样本**。
+这是唯一 Demo 维护目录，不得再创建 `E:\work\IOS_adjust\adjust_demo` 同步副本。
+进入或修改前先读工作区根 `E:\work\IOS_adjust\AGENTS.md`。
 
 ## 职责
 
 允许：组 Adjust 请求字段、调用 `AdjustSigSdk` 现签、向 Adjust 接口发包、展示与记录结果。
 
-不负责：算法复现、逐字节对拍、正式插件接入。那些在 `adjust_test/adjust-signature`
-（`ios` 分支）和 `protocol-client/`。
+不负责：算法复现、逐字节对拍、正式插件接入。那些在
+`..\..\adjust_test\adjust-signature`（`ios` 分支）和 `..\..\protocol-client`。
 
 ## 不可违反
 
 - 本 Demo 的签名值来自**真实签名库**，不得把 `adjust_test` 的复现实现搬进来当签名源；
 - 不得把本 Demo 抓到的样本当成「算法已复现」的证据。样本是对拍输入，不是结论；
-- 字段集以本工作区证据为准（`analysis/unidbg/3201-sign-probe.md`、
-  `analysis/ida/3201-whitelist-keys.txt`），不照抄 Android 工作区的字段表；
+- 字段集以本工作区证据为准（`..\..\analysis\unidbg\3201-sign-probe.md`、
+  `..\..\analysis\ida\3201-whitelist-keys.txt`），不照抄 Android 工作区的字段表；
 - 换 `nativeVersion` 时一并核对 `clientSdk`。两者不匹配会产出与目标版本不符的样本；
-- 样本落 `../samples/`，过程材料落 `../analysis/`，不在本目录堆积证据文件；
+- 样本落 `..\..\samples`，过程材料落 `..\..\analysis`，不在本目录堆积证据文件；
 - 首次用某个 `nativeVersion` 跑通后，在 `VERSION_LOG.md` 追加一条记录。
 
 ## 构建通道
@@ -65,6 +66,6 @@ GitHub Actions 只读取仓库根的 `.github/workflows/`，不读取子目录�
 
 ## 与签名版本排期清单的关系
 
-根目录 `签名版本处理清单.md` 只记「该 nativeVersion 的算法是否已归档」。
+工作区根目录 `..\..\签名版本处理清单.md` 只记「该 nativeVersion 的算法是否已归档」。
 本 Demo 跑通**不代表**该版本处理完成，不得据此改那张表。改动时机见该清单的
 「归档后同步」一节。

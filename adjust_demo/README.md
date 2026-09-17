@@ -52,8 +52,8 @@ App 不做算法复现，也不替代 `adjust_test/adjust-signature`。它只负
 | 2 | `/sdk_click` | `click` |
 | 3 | `/attribution` | `attribution` |
 
-16 个输入字段依据 `analysis/unidbg/3201-sign-probe.md` 的 Probe 输入与
-`analysis/ida/3201-whitelist-keys.txt` 的 85 键白名单。`secret_id` 不进输入，
+16 个输入字段依据 `../../analysis/unidbg/3201-sign-probe.md` 的 Probe 输入与
+`../../analysis/ida/3201-whitelist-keys.txt` 的 85 键白名单。`secret_id` 不进输入，
 由签名库注入缺省值。
 
 ## 构建
@@ -73,23 +73,18 @@ gh run download <run-id> -n AdjustDemo-ipa -D .\dist
 
 ### app_token
 
-真实 App token 存在仓库 Secret `ADJUST_APP_TOKEN`，构建时注入，仓库里只有占位值
-`REPLACE_WITH_ADJUST_APP_TOKEN`。未配置 Secret 时仍可构建，签名完整，只是请求会
-带占位 token。
-
-```powershell
-gh secret set ADJUST_APP_TOKEN --repo Voynul/ios-netdemo --body "<真实 token>"
-```
+仓库固定使用可公开的测试 token `aa0f4lr105j4`，构建流程直接读取
+`Config/demo-config.json`。若以后改用敏感 token，需恢复占位值和 Secret 注入方式。
 
 ## 抓包与冻结样本
 
 1. 设备挂 Reqable 代理，确认 Adjust 域名的 HTTPS 能被解密。
 2. 打开 App，等三个请求发完。
 3. 在 Reqable 取 `/session`、`/sdk_click`、`/attribution` 三条，落盘到
-   `../samples/`（不覆盖旧样本）。
-4. 把 Authorization 与 body 写进 `../analysis/` 的对应记录。
+   `../../samples/`（不覆盖旧样本）。
+4. 把 Authorization 与 body 写进 `../../analysis/` 的对应记录。
 
-三条样本是 `adjust_test/adjust-signature` 对该 `nativeVersion` 对拍的输入。
+三条样本是 `../../adjust_test/adjust-signature` 对该 `nativeVersion` 对拍的输入。
 
 ## 限制
 
