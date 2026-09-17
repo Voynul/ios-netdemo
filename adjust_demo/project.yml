@@ -46,6 +46,7 @@ targets:
         ONLY_ACTIVE_ARCH: NO
         ARCHS: arm64
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
+        OTHER_LDFLAGS: "$(inherited) -Wl,-needed_framework,AdjustSigSdk"
 
 schemes:
   AdjustDemo:

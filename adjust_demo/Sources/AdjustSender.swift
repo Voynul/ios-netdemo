@@ -33,21 +33,14 @@ enum AdjustSender {
         value.addingPercentEncoding(withAllowedCharacters: formAllowed) ?? value
     }
 
-    /// body 字段 = 输入字段减去签名专用键，再减去签名器写回的键。
-    static func bodyFields(from fields: OrderedFields) -> [(key: String, value: String)] {
-        let excluded = FieldsBuilder.signatureOnlyKeys.union(FieldsBuilder.signedBackKeys)
-        return fields.items.filter { !excluded.contains($0.key) }
-    }
-
     static func send(label: String,
                      path: String,
-                     fields: OrderedFields,
+                     bodyFields: [(key: String, value: String)],
                      authorization: String,
                      clientSdk: String,
                      config: DemoConfig,
                      completion: @escaping (SendOutcome) -> Void) {
-        let items = bodyFields(from: fields)
-        let form = items
+        let form = bodyFields
             .map { "\(encode($0.key))=\(encode($0.value))" }
             .joined(separator: "&")
 
@@ -56,7 +49,7 @@ enum AdjustSender {
 
         guard let url = URL(string: urlString) else {
             completion(SendOutcome(label: label, url: urlString, authorization: authorization,
-                                   bodyFields: items, status: -1, responseBody: "",
+                                   bodyFields: bodyFields, status: -1, responseBody: "",
                                    transportError: "URL 无效", elapsedMs: 0))
             return
         }
@@ -75,10 +68,9 @@ enum AdjustSender {
             let status = (response as? HTTPURLResponse)?.statusCode ?? -1
             let text = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
             completion(SendOutcome(label: label, url: urlString, authorization: authorization,
-                                   bodyFields: items, status: status, responseBody: text,
+                                   bodyFields: bodyFields, status: status, responseBody: text,
                                    transportError: error?.localizedDescription, elapsedMs: elapsed))
         }
         task.resume()
     }
 }
-

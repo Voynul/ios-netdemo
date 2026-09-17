@@ -170,6 +170,8 @@ jobs:
           unzip -l out/AdjustDemo.ipa
           echo "--- main binary arch ---"
           lipo -info out/Payload/AdjustDemo.app/AdjustDemo
+          echo "--- main binary framework dependencies ---"
+          otool -L out/Payload/AdjustDemo.app/AdjustDemo | grep AdjustSigSdk
           echo "--- embedded framework ---"
           ls -la out/Payload/AdjustDemo.app/Frameworks/AdjustSigSdk.framework
           echo "--- framework version strings ---"

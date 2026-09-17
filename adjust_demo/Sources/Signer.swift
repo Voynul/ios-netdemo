@@ -4,20 +4,25 @@ import Foundation
 struct SignedPackage {
     /// 可直接写入 HTTP 头的完整 Authorization。
     let authorization: String
-    /// 签名器写回的全部键值，含 signature / algorithm 等。
+    /// 签名器写回的全部键值，含最终请求字段和 authorization。
     let writeBack: [String: String]
+    /// 签名器处理后的最终 HTTP body 字段。
+    let bodyFields: [(key: String, value: String)]
     /// 本次进核的输入键数。
     let inputKeyCount: Int
 }
 
 enum SignerError: Error, CustomStringConvertible {
-    case emptySignature(writeBack: [String: String])
+    case runtime(String)
+    case emptyAuthorization(writeBack: [String: String])
 
     var description: String {
         switch self {
-        case .emptySignature(let writeBack):
+        case .runtime(let message):
+            return message
+        case .emptyAuthorization(let writeBack):
             let keys = writeBack.keys.sorted().joined(separator: ",")
-            return "签名器未写回 signature。写回键：\(keys)"
+            return "签名器未写回 authorization。写回键：\(keys)"
         }
     }
 }
@@ -26,49 +31,46 @@ enum SignerError: Error, CustomStringConvertible {
 /// 不由本文件控制。
 enum Signer {
 
-    /// 与 Protocol 组装格式一致：
-    /// Signature signature="…",adj_signing_id="…",algorithm="…",headers_id="…",native_version="…"
-    static func authorization(from writeBack: [String: String]) -> String {
-        func value(_ key: String) -> String {
-            writeBack[key] ?? ""
-        }
-        return "Signature signature=\"\(value("signature"))\""
-            + ",adj_signing_id=\"\(value("adj_signing_id"))\""
-            + ",algorithm=\"\(value("algorithm"))\""
-            + ",headers_id=\"\(value("headers_id"))\""
-            + ",native_version=\"\(value("native_version"))\""
+    static var libraryVersion: String {
+        AdjustSignerRuntimeBridge.version() ?? "不可用"
     }
 
-    /// 就地签名。签名器直接改写传入的字典。
+    /// 调用官方 SDK 使用的三参数签名入口。
     static func sign(fields: OrderedFields,
                      activityKind: String,
-                     clientSdk: String) throws -> SignedPackage {
-        let dict = NSMutableDictionary()
-        for item in fields.items {
-            dict[item.key] = item.value
+                     clientSdk: String,
+                     endpoint: String) throws -> SignedPackage {
+        var packageParams: [String: String] = [:]
+        for item in fields.items where !FieldsBuilder.signatureOnlyKeys.contains(item.key) {
+            packageParams[item.key] = item.value
         }
         let inputKeyCount = fields.items.count
 
-        activityKind.withCString { kindPointer in
-            clientSdk.withCString { sdkPointer in
-                ADJSigner.sign(dict, withActivityKind: kindPointer, withSdkVersion: sdkPointer)
-            }
+        let result = AdjustSignerRuntimeBridge.signPackageParams(
+            packageParams,
+            activityKind: activityKind,
+            clientSdk: clientSdk,
+            endpoint: endpoint
+        )
+        if let errorMessage = result.errorMessage {
+            throw SignerError.runtime(errorMessage)
         }
 
-        var writeBack: [String: String] = [:]
-        for case let key as String in dict.allKeys {
-            if let value = dict[key] as? String {
-                writeBack[key] = value
-            }
+        let writeBack = result.outputParams ?? [:]
+
+        guard let authorization = writeBack["authorization"], !authorization.isEmpty else {
+            throw SignerError.emptyAuthorization(writeBack: writeBack)
         }
 
-        guard let signature = writeBack["signature"], !signature.isEmpty else {
-            throw SignerError.emptySignature(writeBack: writeBack)
-        }
+        let excluded: Set<String> = ["authorization", "endpoint"]
+        let bodyFields = writeBack
+            .filter { !excluded.contains($0.key) }
+            .sorted { $0.key < $1.key }
+            .map { (key: $0.key, value: $0.value) }
 
-        return SignedPackage(authorization: authorization(from: writeBack),
+        return SignedPackage(authorization: authorization,
                              writeBack: writeBack,
+                             bodyFields: bodyFields,
                              inputKeyCount: inputKeyCount)
     }
 }
-

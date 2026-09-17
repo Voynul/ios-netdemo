@@ -34,7 +34,7 @@ final class DemoRunner {
 
     func run() {
         onLog("=== AdjustDemo 发包开始 ===")
-        onLog("签名库 getVersion() = \(ADJSigner.getVersion())")
+        onLog("签名库 getVersion() = \(Signer.libraryVersion)")
         onLog("nativeVersion(配置) = \(config.nativeVersion)")
         onLog("client_sdk = \(config.clientSdk)")
         onLog("app_token = \(config.appToken)")
@@ -63,7 +63,8 @@ final class DemoRunner {
         do {
             signed = try Signer.sign(fields: fields,
                                      activityKind: step.kind,
-                                     clientSdk: config.clientSdk)
+                                     clientSdk: config.clientSdk,
+                                     endpoint: config.baseUrl)
         } catch {
             onLog("[\(step.kind)] 签名失败：\(error)")
             advance(from: index)
@@ -71,13 +72,13 @@ final class DemoRunner {
         }
 
         onLog("--- \(step.kind) → \(step.path) ---")
-        onLog("输入键数 \(signed.inputKeyCount)，signature 长度 \(signed.writeBack["signature"]?.count ?? 0)")
+        onLog("输入键数 \(signed.inputKeyCount)，输出字段数 \(signed.bodyFields.count)，Authorization 长度 \(signed.authorization.count)")
         onLog("Authorization:")
         onLog(signed.authorization)
 
         AdjustSender.send(label: step.kind,
                           path: step.path,
-                          fields: fields,
+                          bodyFields: signed.bodyFields,
                           authorization: signed.authorization,
                           clientSdk: config.clientSdk,
                           config: config) { [weak self] outcome in
@@ -106,4 +107,3 @@ final class DemoRunner {
         return String(text.prefix(limit)) + " …(截断)"
     }
 }
-
