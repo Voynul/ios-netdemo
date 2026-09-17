@@ -77,7 +77,18 @@ jobs:
           fi
           echo "下载成功 ${FOUND}"
           unzip -q /tmp/sigfw.zip -d Frameworks
-          test -d Frameworks/AdjustSigSdk.xcframework
+          test -d Frameworks/AdjustSigSdk.xcframework/ios-arm64/AdjustSigSdk.framework
+          # 从 xcframework 里取出 ios-arm64 切片，作为普通 framework 使用。
+          # 直接引用 .xcframework 目录时，XcodeGen 只把它当嵌入项，链接阶段缺符号。
+          rm -rf Frameworks/AdjustSigSdk.framework
+          cp -R Frameworks/AdjustSigSdk.xcframework/ios-arm64/AdjustSigSdk.framework \
+                Frameworks/AdjustSigSdk.framework
+          echo "--- 解出的单切片 framework ---"
+          ls -la Frameworks/AdjustSigSdk.framework
+          lipo -info Frameworks/AdjustSigSdk.framework/AdjustSigSdk
+          echo "--- 二进制内含的版本串 ---"
+          strings Frameworks/AdjustSigSdk.framework/AdjustSigSdk \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -5 || true
           ls -la Frameworks
           shasum -a 256 /tmp/sigfw.zip
 
@@ -86,6 +97,21 @@ jobs:
 
       - name: Generate Xcode project
         run: xcodegen generate
+
+      - name: Diagnose project linkage
+        run: |
+          set -uo pipefail
+          echo "=== AdjustSigSdk 在 pbxproj 中的出现位置 ==="
+          grep -n "AdjustSigSdk" AdjustDemo.xcodeproj/project.pbxproj || true
+          echo
+          echo "=== Frameworks 构建阶段（应能看到 AdjustSigSdk）==="
+          awk '/PBXFrameworksBuildPhase section/,/End PBXFrameworksBuildPhase section/' \
+            AdjustDemo.xcodeproj/project.pbxproj || true
+          echo
+          echo "=== 解析后的搜索路径与链接参数 ==="
+          xcodebuild -project AdjustDemo.xcodeproj -scheme AdjustDemo \
+            -sdk iphoneos -showBuildSettings 2>/dev/null \
+            | grep -E "FRAMEWORK_SEARCH_PATHS|OTHER_LDFLAGS|LD_RUNPATH" || true
 
       - name: Build unsigned .app
         run: |
@@ -135,4 +161,3 @@ jobs:
           name: AdjustDemo-ipa
           path: adjust_demo/out/AdjustDemo.ipa
           if-no-files-found: error
-

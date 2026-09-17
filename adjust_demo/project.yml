@@ -23,9 +23,13 @@ targets:
       - path: Config
         buildPhase: resources
     dependencies:
-      - framework: Frameworks/AdjustSigSdk.xcframework
+      # 用解出来的单切片 framework，不用 xcframework 目录本身。
+      # 实测 .xcframework 走 XcodeGen 依赖时只被当作嵌入项，链接阶段拿不到符号，
+      # 报错是 undefined symbol 而非 framework not found。详见 workflow 的提取步骤。
+      - framework: Frameworks/AdjustSigSdk.framework
         embed: true
         codeSign: false
+        link: true
     settings:
       base:
         PRODUCT_NAME: AdjustDemo
@@ -52,4 +56,3 @@ schemes:
       config: Debug
     archive:
       config: Release
-
