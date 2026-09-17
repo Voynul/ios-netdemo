@@ -28,18 +28,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject app token
-        run: |
-          set -euo pipefail
-          TOKEN="${{ secrets.ADJUST_APP_TOKEN }}"
-          if [ -z "${TOKEN}" ]; then
-            echo "未配置 ADJUST_APP_TOKEN secret，保留配置中的占位值"
-          else
-            jq --arg t "${TOKEN}" '.appToken = $t' Config/demo-config.json > /tmp/cfg.json
-            mv /tmp/cfg.json Config/demo-config.json
-            echo "已注入 app_token，长度 ${#TOKEN}"
-          fi
-
       - name: Read demo config
         id: cfg
         run: |

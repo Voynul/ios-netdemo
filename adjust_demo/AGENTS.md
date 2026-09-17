@@ -39,15 +39,11 @@ GitHub Actions 只读取仓库根的 `.github/workflows/`，不读取子目录�
 
 ### app_token 处理
 
-工作区规则禁止把真实 App token 提交进仓库，而宿主仓库是公开仓库。因此：
+用户已确认 `aa0f4lr105j4` 只是可公开的测试 token，允许提交到公开仓库。
 
-- `Config/demo-config.json` 里的 `appToken` 保持占位值 `REPLACE_WITH_ADJUST_APP_TOKEN`；
-- 真实 token 存在仓库 Secret `ADJUST_APP_TOKEN`；
-- 构建时由 `Inject app token` 步骤用 `jq` 注入，注入后不打印明文；
-- 未配置 Secret 时构建照常进行，只是发出去的请求会带占位 token，
-  签名仍然完整，可用于对拍。
-
-修改 `appToken` 相关逻辑时不要破坏这条链路。
+- `Config/demo-config.json` 固定保存该测试 token；
+- 构建流程直接使用仓库配置，不再通过 GitHub Secret 覆盖；
+- 若以后更换为真实或敏感 token，必须先恢复占位值与 Secret 注入方式。
 
 ## Demo 创建后的双次运行（必做）
 
