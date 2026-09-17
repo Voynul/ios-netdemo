@@ -29,6 +29,8 @@
 签名库由 CI 按 `Config/demo-config.json` 的 `nativeVersion` 从官方 releases 下载，
 不在仓库内保存二进制。
 
+后续构建只记录提交、GitHub Actions run、构建结果和产物路径，不计算或记录 IPA SHA-256。
+
 **宿主仓库：** `https://github.com/Voynul/ios-netdemo`
 
 本 Demo 以子目录 `adjust_demo/` 的形式托管在该仓库中，与同仓库的 NetDemo 并列。
