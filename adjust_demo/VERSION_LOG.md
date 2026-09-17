@@ -42,9 +42,9 @@ Demo 构建成功、IPA 安装成功和三连请求抓包是独立检查项。�
 | app_token | `aa0f4lr105j4` | 可公开的测试值 |
 | environment | `production` | 已配置 |
 | host | `app.adjust.com` | 已配置 |
-| GitHub Actions run | 待生成 | production 与三连修复版本尚未构建 |
-| 提交 | 待生成 | 本次修改尚未推送 |
-| IPA SHA-256 | 待生成 | 构建完成后补充 |
+| GitHub Actions run | `35194526692` | production 与三连修复版本构建成功 |
+| 提交 | `fe8fd53` | 已推送到 `Voynul/ios-netdemo` 的 `main` 分支 |
+| IPA SHA-256 | `6CE940983560D2E17B80D8A08DCF7119E1CA8EA0276DAE15B3DD58A375DE91FB` | 已核对内置配置和 framework |
 | 真机双次运行 | 待复测 | 上一版实测仅发送 session；runner 生命周期问题已修复 |
 | 三连请求样本 | 待执行 | `/session`、`/sdk_click`、`/attribution` |
 
