@@ -101,17 +101,40 @@ jobs:
       - name: Diagnose project linkage
         run: |
           set -uo pipefail
-          echo "=== AdjustSigSdk 在 pbxproj 中的出现位置 ==="
-          grep -n "AdjustSigSdk" AdjustDemo.xcodeproj/project.pbxproj || true
+          FW="Frameworks/AdjustSigSdk.framework/AdjustSigSdk"
+
+          echo "=== 1. framework 二进制属性 ==="
+          file "$FW"
+          lipo -info "$FW"
+
           echo
-          echo "=== Frameworks 构建阶段（应能看到 AdjustSigSdk）==="
-          awk '/PBXFrameworksBuildPhase section/,/End PBXFrameworksBuildPhase section/' \
-            AdjustDemo.xcodeproj/project.pbxproj || true
+          echo "=== 2. 二进制是否导出 ADJSigner 符号 ==="
+          nm -gU "$FW" 2>/dev/null | grep -i "ADJSigner" || echo "  （nm -gU 未找到 ADJSigner）"
+          echo "  --- 全部 ObjC 类符号（前 20 条）---"
+          nm -gU "$FW" 2>/dev/null | grep "_OBJC_CLASS_" | head -20 || true
+
           echo
-          echo "=== 解析后的搜索路径与链接参数 ==="
+          echo "=== 3. 独立链接测试（绕过 Xcode 工程）==="
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          printf 'int main(void){return 0;}\n' > /tmp/t.c
+          if xcrun --sdk iphoneos clang -arch arm64 -isysroot "$SDK" \
+               -F "$PWD/Frameworks" -framework AdjustSigSdk \
+               /tmp/t.c -o /tmp/t 2>/tmp/link.err; then
+            echo "  独立链接：成功（说明 -F + -framework 可用）"
+          else
+            echo "  独立链接：失败"
+            head -20 /tmp/link.err
+          fi
+
+          echo
+          echo "=== 4. 链接期的搜索路径（Release）==="
           xcodebuild -project AdjustDemo.xcodeproj -scheme AdjustDemo \
-            -sdk iphoneos -showBuildSettings 2>/dev/null \
-            | grep -E "FRAMEWORK_SEARCH_PATHS|OTHER_LDFLAGS|LD_RUNPATH" || true
+            -configuration Release -sdk iphoneos -showBuildSettings 2>/dev/null \
+            | grep -E "^\s+(FRAMEWORK_SEARCH_PATHS|OTHER_LDFLAGS) " || true
+
+          echo
+          echo "=== 5. 二进制自身依赖 ==="
+          otool -L "$FW" | head -8
 
       - name: Build unsigned .app
         run: |
