@@ -30,7 +30,7 @@ struct DemoConfig {
             nativeVersion: str("nativeVersion", "unknown"),
             clientSdk: str("clientSdk", "ios0.0.0"),
             appToken: str("appToken", "000000000000"),
-            environment: str("environment", "sandbox"),
+            environment: str("environment", "production"),
             host: str("host", "app.adjust.com"),
             scheme: str("scheme", "https"),
             appName: str("appName", "AdjustDemo"),
@@ -44,4 +44,3 @@ struct DemoConfig {
         "\(scheme)://\(host)"
     }
 }
-

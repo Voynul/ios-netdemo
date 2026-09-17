@@ -40,12 +40,12 @@ Demo 构建成功、IPA 安装成功和三连请求抓包是独立检查项。�
 | nativeVersion | `3.20.1` | 进行中 |
 | clientSdk | `ios5.0.1` | 与 iOS SDK 5.0.1 的 `~> 3.18` 依赖范围相容 |
 | app_token | `aa0f4lr105j4` | 可公开的测试值 |
-| environment | `sandbox` | 已配置 |
+| environment | `production` | 已配置 |
 | host | `app.adjust.com` | 已配置 |
-| GitHub Actions run | `35192529174` | 构建成功 |
-| 提交 | `66facd6` | 已推送到 `Voynul/ios-netdemo` 的 `main` 分支 |
-| IPA SHA-256 | `EE63E8E822B0207BD0DD538CF7F6CAEA7BA78FD9052A32EC5F61AE2EB13A5ABF` | 已核对 |
-| 真机双次运行 | 待执行 | 需卸载重装后分别运行一次 |
+| GitHub Actions run | 待生成 | production 与三连修复版本尚未构建 |
+| 提交 | 待生成 | 本次修改尚未推送 |
+| IPA SHA-256 | 待生成 | 构建完成后补充 |
+| 真机双次运行 | 待复测 | 上一版实测仅发送 session；runner 生命周期问题已修复 |
 | 三连请求样本 | 待执行 | `/session`、`/sdk_click`、`/attribution` |
 
 ## 4. Adjust iOS SDK 与 nativeVersion 的官方关系

@@ -2,7 +2,7 @@
   "nativeVersion": "3.20.1",
   "clientSdk": "ios5.0.1",
   "appToken": "aa0f4lr105j4",
-  "environment": "sandbox",
+  "environment": "production",
   "host": "app.adjust.com",
   "scheme": "https",
   "appName": "AdjustDemo",

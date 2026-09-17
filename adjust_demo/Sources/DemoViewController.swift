@@ -6,6 +6,7 @@ final class DemoViewController: UIViewController {
     private let runButton = UIButton(type: .system)
     private let config = DemoConfig.load()
     private var isRunning = false
+    private var runner: DemoRunner?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -69,10 +70,12 @@ final class DemoViewController: UIViewController {
                                 },
                                 onFinish: { [weak self] in
                                     DispatchQueue.main.async {
+                                        self?.runner = nil
                                         self?.isRunning = false
                                         self?.runButton.isEnabled = true
                                     }
                                 })
+        self.runner = runner
         DispatchQueue.global(qos: .userInitiated).async {
             runner.run()
         }
@@ -84,4 +87,3 @@ final class DemoViewController: UIViewController {
         textView.scrollRangeToVisible(end)
     }
 }
-
