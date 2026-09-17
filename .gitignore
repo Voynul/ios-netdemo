@@ -1,9 +1,9 @@
 build/
 out/
+dist/
 DerivedData/
 *.xcuserstate
 xcuserdata/
 *.xcodeproj/
 NetDemo/Info.plist
 .DS_Store
-
