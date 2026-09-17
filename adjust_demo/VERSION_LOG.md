@@ -42,8 +42,9 @@ Demo 构建成功、IPA 安装成功和三连请求抓包是独立检查项。�
 | app_token | `aa0f4lr105j4` | 可公开的测试值 |
 | environment | `production` | 已配置 |
 | host | `app.adjust.com` | 已配置 |
-| GitHub Actions run | 待生成 | 3.32.0 尚未构建 |
-| 提交 | 待生成 | 3.32.0 修改尚未推送 |
+| GitHub Actions run | `35201911210` | 3.32.0 构建成功 |
+| 提交 | `4a64c27` | 已推送到 `Voynul/ios-netdemo` 的 `main` 分支 |
+| 产物路径 | `E:\work\IOS_adjust\build-artifacts\AdjustDemo-3.32.0-4a64c27\AdjustDemo.ipa` | 已核对包内版本配置和 framework |
 | 真机双次运行 | 待执行 | 3.32.0 构建安装后执行 |
 | 三连请求样本 | 待执行 | `/session`、`/sdk_click`、`/attribution` |
 
