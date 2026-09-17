@@ -1,0 +1,9 @@
+build/
+out/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcodeproj/
+NetDemo/Info.plist
+.DS_Store
+

@@ -1,0 +1,48 @@
+name: NetDemo
+
+options:
+  bundleIdPrefix: com.voynul
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+targets:
+  NetDemo:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_NAME: NetDemo
+        PRODUCT_BUNDLE_IDENTIFIER: com.voynul.netdemo
+        INFOPLIST_FILE: Resources/Info.plist
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGN_ENTITLEMENTS: ""
+        ENABLE_BITCODE: NO
+        ONLY_ACTIVE_ARCH: NO
+        ARCHS: arm64
+        VALIDATE_PRODUCT: YES
+
+schemes:
+  NetDemo:
+    build:
+      targets:
+        NetDemo: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
