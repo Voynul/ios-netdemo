@@ -78,7 +78,6 @@ jobs:
           strings Frameworks/AdjustSigSdk.framework/AdjustSigSdk \
             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -5 || true
           ls -la Frameworks
-          shasum -a 256 /tmp/sigfw.zip
 
       - name: Install XcodeGen
         run: brew install xcodegen
