@@ -1,7 +1,8 @@
 # adjust_demo
 
-自建 iOS 发包 Demo。用官方 `AdjustSigSdk` 签名库现签，向 Adjust 接口发真实请求，
-供 Reqable 抓包后冻结点对样本。
+自建 iOS SDK 接入 Demo。App 只初始化官方 Adjust iOS SDK，并在启动时调用官方
+deep link 处理入口；字段、网址、方法、队列和 Authorization 均由 SDK 与指定版本
+`AdjustSigSdk` 生成，供 Reqable 抓包后冻结真实样本。
 
 本目录属于 `E:\work\IOS_adjust` 工作区（iOS Adjust 签名复现）。规则见同目录 `AGENTS.md`。
 
@@ -12,16 +13,18 @@
 本工作区的算法复现任务要求「真实 iOS HTTP 样本」和文档后的网络发包验证，
 但目标是官方 Dynamic xcframework，不是某个 App，本机跑不出 Adjust 流量。
 
-Demo 补上这一环：它链接指定 `nativeVersion` 的签名库，按 Adjust 的请求格式发包，
+Demo 补上这一环：它接入指定版本的 Adjust SDK 与签名库，由 SDK 产生真实请求。
 抓到的 Authorization 就是该版本的 HTTP 真值。
 
 ## 工作原理
 
 ```text
 Config/demo-config.json
-  → CI 按 nativeVersion 下载 AdjustSigSdk.xcframework
-  → xcodegen 生成工程，链接并内嵌该 framework
-  → App 组字段 → ADJSigner 签名 → 拼 Authorization → POST
+  → CI 下载指定 AdjustSdk 和 AdjustSigSdk xcframework
+  → xcodegen 生成工程，链接并内嵌两个 framework
+  → App 以 production 初始化 Adjust SDK
+  → App 启动时提交 deep link
+  → SDK 内部生成 session、sdk_click 和后续归因请求
 ```
 
 App 不做算法复现，也不替代 `adjust_test/adjust-signature`。它只负责用真实签名库
@@ -29,32 +32,26 @@ App 不做算法复现，也不替代 `adjust_test/adjust-signature`。它只负
 
 ## 切换版本
 
-只改 `Config/demo-config.json` 的 `nativeVersion`（必要时同改 `clientSdk`），
+只改 `Config/demo-config.json` 的 `nativeVersion`（必要时同改 `adjustSdkVersion`），
 推送到 `main` 即触发重新构建。签名库由 CI 从官方 releases 下载，仓库不存二进制。
 
 | 字段 | 说明 |
 | --- | --- |
 | `nativeVersion` | 决定链接哪个版本的 `AdjustSigSdk`，同时写入 Authorization 的 `native_version` |
-| `clientSdk` | 写入 `client_sdk` 字段与 `Client-SDK` 头 |
+| `adjustSdkVersion` | 决定构建时接入哪个 Adjust iOS SDK；`client_sdk` 由 SDK 自己生成 |
 | `appToken` | 请求里的 `app_token` |
-| `environment` | `sandbox` 或 `production`，写入 `environment` 字段 |
-| `host` / `scheme` | 目标地址，默认 `https://app.adjust.com` |
-| `autoSend` | 启动后自动发包 |
-| `intervalSeconds` | 三个请求之间的间隔 |
+| `environment` | 固定为 `production`；不是 production 时 App 拒绝初始化 SDK |
+| `startupDeeplink` | 启动时交给 `Adjust.processDeeplink` 的业务 deep link，不是 HTTP 接口地址 |
 
-## 请求内容
+## 请求行为
 
-固定顺序发三个请求，与根目录 `AGENTS.md` 5.2 一致：
+App 启动后执行两步：
 
-| 顺序 | path | `activity_kind` |
-| --- | --- | --- |
-| 1 | `/session` | `session` |
-| 2 | `/sdk_click` | `click` |
-| 3 | `/attribution` | `attribution` |
+1. 使用 `ADJEnvironmentProduction` 初始化 Adjust SDK。
+2. 立即调用 `Adjust.processDeeplink`，让 SDK 内部生成 `/sdk_click`。
 
-16 个输入字段依据 `../../analysis/unidbg/3201-sign-probe.md` 的 Probe 输入与
-`../../analysis/ida/3201-whitelist-keys.txt` 的 85 键白名单。`secret_id` 不进输入，
-由签名库注入缺省值。
+`/session` 由 SDK 生命周期产生。`/attribution` 是否发送、发送时间和方法由 SDK
+状态及服务端响应决定。Demo 不手工构造请求，也不保证固定三连顺序。
 
 ## 构建
 
@@ -79,17 +76,16 @@ gh run download <run-id> -n AdjustDemo-ipa -D .\dist
 ## 抓包与冻结样本
 
 1. 设备挂 Reqable 代理，确认 Adjust 域名的 HTTPS 能被解密。
-2. 打开 App，等三个请求发完。
-3. 在 Reqable 取 `/session`、`/sdk_click`、`/attribution` 三条，落盘到
-   `../../samples/`（不覆盖旧样本）。
+2. 打开 App，等待 SDK 自动发送请求。
+3. 在 Reqable 取得 `/session` 和启动 deep link 产生的 `/sdk_click`；若 SDK 同时产生
+   `/attribution`，一并记录。样本落盘到 `../../samples/`，不得覆盖旧样本。
 4. 把 Authorization 与 body 写进 `../../analysis/` 的对应记录。
 
-三条样本是 `../../adjust_test/adjust-signature` 对该 `nativeVersion` 对拍的输入。
+这些 SDK 请求是 `../../adjust_test/adjust-signature` 对该 `nativeVersion` 对拍的输入。
 
 ## 限制
 
-- 本 Demo 自己组字段并发包，不经过 Adjust 官方 iOS SDK，因此字段集是
-  「够用且可追溯」，不等同于某个真实 App 的完整字段集。
+- 启动 deep link 是用于稳定进入 SDK 的 click 路径，不是 Adjust HTTP 接口地址。
 - 服务端可能因占位 app_token 返回非 2xx。本 Demo 的产出是**签名真值**，
   不是「接口调用成功」的证据；5.2 发包闸门在复现工程侧执行。
 - 内嵌的是 Dynamic framework，Sideloadly 重签时需要一并处理。

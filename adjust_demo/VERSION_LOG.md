@@ -28,7 +28,7 @@ Demo 构建成功、IPA 安装成功和三连请求抓包是独立检查项。�
 | 状态 | 数量 | 说明 |
 | --- | ---: | --- |
 | 已完成 | 8 | 已有真实 iOS 样本并完成归档 |
-| 进行中 | 1 | `3.35.0` 当前 Demo |
+| 进行中 | 1 | `3.35.1` 当前 Demo |
 | 待处理 | 11 | 进入后续排期 |
 | 暂缓 | 11 | `3.0.0` 至 `3.13.1` |
 | 合计 | 31 | 与官方 Release 数量一致 |
@@ -37,16 +37,17 @@ Demo 构建成功、IPA 安装成功和三连请求抓包是独立检查项。�
 
 | 项目 | 当前值 | 状态 |
 | --- | --- | --- |
-| nativeVersion | `3.35.0` | 当前 Demo |
-| clientSdk | `ios5.0.1` | 与 iOS SDK 5.0.1 的 `~> 3.18` 依赖范围相容 |
+| nativeVersion | `3.35.1` | 当前 Demo |
+| Adjust SDK | `5.0.1` | 运行时 `client_sdk` 由 SDK 生成；签名库在 `~> 3.18` 依赖范围内 |
 | app_token | `aa0f4lr105j4` | 可公开的测试值 |
 | environment | `production` | 已配置 |
-| host | `app.adjust.com` | 已配置 |
-| GitHub Actions run | 待生成 | 推送 3.35.0 配置后构建 |
+| 请求地址 | SDK 内部决定 | Demo 不配置 host、path 或 method |
+| 启动触发 | `adjustdemo://startup` | 初始化后立即交给 `Adjust.processDeeplink` |
+| GitHub Actions run | 待生成 | 推送 3.35.1 配置后构建 |
 | 提交 | 待提交 | 当前仅完成本地配置 |
 | 产物路径 | 待生成 | Actions 构建成功后下载并核对 |
-| 真机双次运行 | 待执行 | 3.35.0 构建安装后执行 |
-| 三连请求样本 | 待执行 | `/session`、`/sdk_click`、`/attribution` |
+| 真机双次运行 | 待执行 | 3.35.1 构建安装后执行 |
+| SDK 请求样本 | 待执行 | 必查 `/session`、`/sdk_click`；`/attribution` 按 SDK 实际行为记录 |
 
 ## 4. Adjust iOS SDK 与 nativeVersion 的官方关系
 
@@ -103,11 +104,11 @@ Demo 构建成功、IPA 安装成功和三连请求抓包是独立检查项。�
 
 | 顺序 | nativeVersion | 类型 | 建议 clientSdk | 关系依据 | 状态 |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | `3.35.0` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 进行中：当前 Demo，待提交、构建与真机验证 |
+| 1 | `3.35.1` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 进行中：SDK 驱动 Demo，待提交、构建与真机验证 |
 | 2 | `3.67.0-beta` | beta | `ios5.6.2` | 同系列稳定版由 iOS SDK 5.6.2 固定依赖 | 待处理，需单独验证 |
 | 3 | `3.62.0` | 正式版 | `ios5.5.0` | iOS SDK 5.5.0 首次固定依赖 | 待处理 |
 | 4 | `3.47.0-beta` | beta | `ios5.4.1` | 同系列稳定版由 iOS SDK 5.4.1 固定依赖 | 待处理，需单独验证 |
-| 5 | `3.35.1` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 待处理 |
+| 5 | `3.35.0` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 待处理 |
 | 6 | `3.24.1-beta` | beta | `ios5.0.1` | 5.0.1 作为测试候选，需单独验证 | 待处理 |
 | 7 | `3.24.0-beta` | beta | `ios5.0.1` | 5.0.1 作为测试候选，需单独验证 | 待处理 |
 | 8 | `3.20.0` | 正式版 | `ios5.0.1` | `~> 3.18` 范围 | 待处理 |
@@ -135,20 +136,20 @@ Demo 构建成功、IPA 安装成功和三连请求抓包是独立检查项。�
 ### YYYY-MM-DD - nativeVersion X / clientSdk Y
 
 - 官方关系：固定依赖、范围依赖或测试候选。
-- 配置：nativeVersion、clientSdk、environment、host。
+- 配置：nativeVersion、Adjust SDK、environment、startupDeeplink。
 - 构建：提交、Actions run id、构建结果和产物路径。
 - 签名库：getVersion() 返回值。
 - 设备：机型、iOS 版本、签名方式。
-- 第一次运行：/session、/sdk_click、/attribution 的状态与样本路径。
+- 第一次运行：SDK 实际产生的 /session、/sdk_click、/attribution 状态与样本路径。
 - 卸载重装。
-- 第二次运行：/session、/sdk_click、/attribution 的状态与样本路径。
+- 第二次运行：SDK 实际产生的 /session、/sdk_click、/attribution 状态与样本路径。
 - 结论：通过、阻塞或需要补证。
 ```
 
 ## 9. 更新流程
 
 1. 从本文件排期表选择目标 `nativeVersion`。
-2. 按第 4 节确定 `clientSdk`；无固定关系时明确标记为测试候选。
+2. 按第 4 节确定 `adjustSdkVersion`；无固定关系时明确标记为测试候选。
 3. 修改 `Config/demo-config.json`，推送后由 GitHub Actions 构建 IPA。
 4. 使用 Sideloadly 重签安装，按 `AGENTS.md` 执行两次安装运行。
 5. 冻结两轮三连请求样本，在本文件追加验证记录。

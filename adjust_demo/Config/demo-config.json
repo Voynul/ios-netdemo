@@ -1,12 +1,9 @@
 {
-  "nativeVersion": "3.35.0",
-  "clientSdk": "ios5.0.1",
+  "nativeVersion": "3.35.1",
+  "adjustSdkVersion": "5.0.1",
   "appToken": "aa0f4lr105j4",
   "environment": "production",
-  "host": "app.adjust.com",
-  "scheme": "https",
   "appName": "AdjustDemo",
   "bundleId": "com.example.adjustsigndemo",
-  "autoSend": true,
-  "intervalSeconds": 1.5
+  "startupDeeplink": "adjustdemo://startup"
 }

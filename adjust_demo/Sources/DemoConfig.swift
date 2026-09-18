@@ -4,15 +4,12 @@ import Foundation
 struct DemoConfig {
 
     let nativeVersion: String
-    let clientSdk: String
+    let adjustSdkVersion: String
     let appToken: String
     let environment: String
-    let host: String
-    let scheme: String
     let appName: String
     let bundleId: String
-    let autoSend: Bool
-    let intervalSeconds: Double
+    let startupDeeplink: String
 
     static func load() -> DemoConfig {
         guard let url = Bundle.main.url(forResource: "demo-config", withExtension: "json"),
@@ -28,19 +25,12 @@ struct DemoConfig {
 
         return DemoConfig(
             nativeVersion: str("nativeVersion", "unknown"),
-            clientSdk: str("clientSdk", "ios0.0.0"),
+            adjustSdkVersion: str("adjustSdkVersion", "0.0.0"),
             appToken: str("appToken", "000000000000"),
             environment: str("environment", "production"),
-            host: str("host", "app.adjust.com"),
-            scheme: str("scheme", "https"),
             appName: str("appName", "AdjustDemo"),
             bundleId: str("bundleId", "com.example.adjustsigndemo"),
-            autoSend: (obj["autoSend"] as? Bool) ?? true,
-            intervalSeconds: (obj["intervalSeconds"] as? Double) ?? 1.5
+            startupDeeplink: str("startupDeeplink", "adjustdemo://startup")
         )
-    }
-
-    var baseUrl: String {
-        "\(scheme)://\(host)"
     }
 }

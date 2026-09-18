@@ -6,18 +6,16 @@
 
 ## 职责
 
-允许：组 Adjust 请求字段、调用 `AdjustSigSdk` 现签、向 Adjust 接口发包、展示与记录结果。
+允许：接入并初始化官方 Adjust iOS SDK、嵌入指定版本 `AdjustSigSdk`、在启动时调用官方 deep link 处理入口、展示 SDK 启动状态并记录真实请求。
 
 不负责：算法复现、逐字节对拍、正式插件接入。那些在
 `..\..\adjust_test\adjust-signature`（`ios` 分支）和 `..\..\protocol-client`。
 
 ## 不可违反
 
-- 本 Demo 的签名值来自**真实签名库**，不得把 `adjust_test` 的复现实现搬进来当签名源；
+- 本 Demo 的请求字段、网址、方法、队列和签名必须由**真实 Adjust SDK + 真实签名库**产生，不得把 `adjust_test` 的复现实现或手工 HTTP 客户端搬进来；
 - 不得把本 Demo 抓到的样本当成「算法已复现」的证据。样本是对拍输入，不是结论；
-- 字段集以本工作区证据为准（`..\..\analysis\unidbg\3201-sign-probe.md`、
-  `..\..\analysis\ida\3201-whitelist-keys.txt`），不照抄 Android 工作区的字段表；
-- 换 `nativeVersion` 时一并核对 `clientSdk`。两者不匹配会产出与目标版本不符的样本；
+- 换 `nativeVersion` 时一并核对 `adjustSdkVersion`。两者不匹配会产出与目标版本不符的样本；
 - 样本落 `..\..\samples`，过程材料落 `..\..\analysis`，不在本目录堆积证据文件；
 - 首次用某个 `nativeVersion` 跑通后，在 `VERSION_LOG.md` 追加一条记录。
 
@@ -26,8 +24,8 @@
 本机是 Windows，编译交给 GitHub Actions 的 macOS runner，产出未签名 IPA，
 用 Sideloadly 加 Apple ID 重签装机。
 
-签名库由 CI 按 `Config/demo-config.json` 的 `nativeVersion` 从官方 releases 下载，
-不在仓库内保存二进制。
+Adjust SDK 与签名库由 CI 按 `Config/demo-config.json` 的 `adjustSdkVersion` 和
+`nativeVersion` 从官方 releases 下载，不在仓库内保存二进制。
 
 后续构建只记录提交、GitHub Actions run、构建结果和产物路径，不计算或记录 IPA SHA-256。
 
@@ -58,10 +56,7 @@ GitHub Actions 只读取仓库根的 `.github/workflows/`，不读取子目录�
 3. **清空数据**：iOS 没有 `pm clear` 的对等命令。等效做法是**卸载后重装**
    （本 Demo 状态存在 UserDefaults，卸载即清；Keychain 可能保留）。
 4. **第二次启动**：重装后再次启动，记录第 2 组请求。
-5. **存在记录验证**：两轮都要在 Reqable 中确认三条请求都发出
-   （`/session`、`/sdk_click`、`/attribution`）。本 Demo 的签名与请求详情在
-   **应用内日志面板**可见，但那只是辅助；Authorization 的最终真值以 Reqable
-   冻结的那条请求为准。
+5. **存在记录验证**：两轮都要在 Reqable 中确认 SDK 自动产生的 `/session`，以及启动 deep link 触发的 `/sdk_click`。`/attribution` 是否出现、请求时机和方法由 SDK 内部状态与服务端响应决定；出现则记录，未出现不得手工补发。本 Demo 的应用界面只显示初始化状态，Authorization 和请求内容以 Reqable 冻结的请求为准。
 6. 两轮的时间、设备、版本与 Authorization 实测值写入 `VERSION_LOG.md`。
 
 该动作是 Demo 创建流程的固定步骤，无需用户再次提醒。

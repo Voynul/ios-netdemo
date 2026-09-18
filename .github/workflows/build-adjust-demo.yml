@@ -33,9 +33,10 @@ jobs:
         run: |
           set -euo pipefail
           NV=$(jq -r '.nativeVersion' Config/demo-config.json)
-          CS=$(jq -r '.clientSdk' Config/demo-config.json)
+          ASV=$(jq -r '.adjustSdkVersion' Config/demo-config.json)
           echo "native_version=$NV" >> "$GITHUB_OUTPUT"
-          echo "目标 nativeVersion=${NV}  clientSdk=${CS}"
+          echo "adjust_sdk_version=$ASV" >> "$GITHUB_OUTPUT"
+          echo "目标 nativeVersion=${NV}  Adjust SDK=${ASV}"
 
       - name: Show toolchain
         run: |
@@ -79,6 +80,28 @@ jobs:
             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -5 || true
           ls -la Frameworks
 
+      - name: Fetch Adjust SDK framework
+        run: |
+          set -euo pipefail
+          ASV="${{ steps.cfg.outputs.adjust_sdk_version }}"
+          BASE="https://github.com/adjust/ios_sdk/releases/download/v${ASV}"
+          NAME="AdjustSdk-iOS-tvOS-Dynamic-${ASV}.xcframework.zip"
+          curl -fsSL -o /tmp/adjustsdk.zip "${BASE}/${NAME}"
+          rm -rf /tmp/adjustsdk
+          mkdir -p /tmp/adjustsdk
+          unzip -q /tmp/adjustsdk.zip -d /tmp/adjustsdk
+          SDK_XCFRAMEWORK=$(find /tmp/adjustsdk -type d -name AdjustSdk.xcframework -print -quit)
+          test -n "${SDK_XCFRAMEWORK}"
+          test -d "${SDK_XCFRAMEWORK}/ios-arm64/AdjustSdk.framework"
+          rm -rf Frameworks/AdjustSdk.framework
+          cp -R "${SDK_XCFRAMEWORK}/ios-arm64/AdjustSdk.framework" \
+                Frameworks/AdjustSdk.framework
+          echo "--- Adjust SDK 单切片 framework ---"
+          ls -la Frameworks/AdjustSdk.framework
+          lipo -info Frameworks/AdjustSdk.framework/AdjustSdk
+          strings Frameworks/AdjustSdk.framework/AdjustSdk \
+            | grep -E '^ios[0-9]+\.[0-9]+\.[0-9]+$' | head -5 || true
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
@@ -88,24 +111,26 @@ jobs:
       - name: Diagnose project linkage
         run: |
           set -uo pipefail
-          FW="Frameworks/AdjustSigSdk.framework/AdjustSigSdk"
+          SDK_FW="Frameworks/AdjustSdk.framework/AdjustSdk"
+          SIG_FW="Frameworks/AdjustSigSdk.framework/AdjustSigSdk"
 
           echo "=== 1. framework 二进制属性 ==="
-          file "$FW"
-          lipo -info "$FW"
+          file "$SDK_FW" "$SIG_FW"
+          lipo -info "$SDK_FW"
+          lipo -info "$SIG_FW"
 
           echo
           echo "=== 2. 二进制是否导出 ADJSigner 符号 ==="
-          nm -gU "$FW" 2>/dev/null | grep -i "ADJSigner" || echo "  （nm -gU 未找到 ADJSigner）"
+          nm -gU "$SIG_FW" 2>/dev/null | grep -i "ADJSigner" || echo "  （nm -gU 未找到 ADJSigner）"
           echo "  --- 全部 ObjC 类符号（前 20 条）---"
-          nm -gU "$FW" 2>/dev/null | grep "_OBJC_CLASS_" | head -20 || true
+          nm -gU "$SDK_FW" 2>/dev/null | grep "_OBJC_CLASS_" | head -20 || true
 
           echo
           echo "=== 3. 独立链接测试（绕过 Xcode 工程）==="
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
           printf 'int main(void){return 0;}\n' > /tmp/t.c
           if xcrun --sdk iphoneos clang -arch arm64 -isysroot "$SDK" \
-               -F "$PWD/Frameworks" -framework AdjustSigSdk \
+               -F "$PWD/Frameworks" -framework AdjustSdk -framework AdjustSigSdk \
                /tmp/t.c -o /tmp/t 2>/tmp/link.err; then
             echo "  独立链接：成功（说明 -F + -framework 可用）"
           else
@@ -121,7 +146,8 @@ jobs:
 
           echo
           echo "=== 5. 二进制自身依赖 ==="
-          otool -L "$FW" | head -8
+          otool -L "$SDK_FW" | head -12
+          otool -L "$SIG_FW" | head -8
 
       - name: Build unsigned .app
         run: |
@@ -158,10 +184,13 @@ jobs:
           echo "--- main binary arch ---"
           lipo -info out/Payload/AdjustDemo.app/AdjustDemo
           echo "--- main binary framework dependencies ---"
-          otool -L out/Payload/AdjustDemo.app/AdjustDemo | grep AdjustSigSdk
-          echo "--- embedded framework ---"
+          otool -L out/Payload/AdjustDemo.app/AdjustDemo | grep -E 'AdjustSdk|AdjustSigSdk'
+          echo "--- embedded frameworks ---"
+          ls -la out/Payload/AdjustDemo.app/Frameworks/AdjustSdk.framework
           ls -la out/Payload/AdjustDemo.app/Frameworks/AdjustSigSdk.framework
           echo "--- framework version strings ---"
+          strings out/Payload/AdjustDemo.app/Frameworks/AdjustSdk.framework/AdjustSdk \
+            | grep -E '^ios[0-9]+\.[0-9]+\.[0-9]+$' | head -5 || true
           strings out/Payload/AdjustDemo.app/Frameworks/AdjustSigSdk.framework/AdjustSigSdk \
             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -5 || true
           echo "--- bundled config（app_token 打码）---"
